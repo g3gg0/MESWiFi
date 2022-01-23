@@ -12,9 +12,9 @@ const int udpPortIn = 3334;
 WiFiUDP lon_udp_out;
 WiFiUDP lon_udp_in;
 
-#define LON_RX    26
-#define LON_TX    33
-#define LON_TX_EN 25
+#define LON_RX    35
+#define LON_TX    25
+#define LON_TX_EN 26
 
 #define LONSTATE_VERSION 0x0100
 
@@ -48,26 +48,30 @@ typedef struct
   uint32_t igniteStatPos; 
   uint8_t igniteStats[24*12];
   uint32_t ignites_24h;
-  int16_t empty_00;
-  int16_t var_sel_00;
+  int32_t var_sel_00;
+  uint32_t var_sel_10;
+  uint32_t var_sel_12;
+  uint32_t var_sel_72;
   uint32_t var_sel_8A;
-  int16_t empty_01;
-  int16_t var_sel_110;
-  int16_t empty_02;
-  int16_t var_nv_1B;
+  uint32_t var_sel_110;
   uint32_t var_nv_12;
+  uint32_t var_nv_15_pmx;
+  uint32_t var_nv_1B;
+  uint32_t var_nv_1B_pmx;
+  uint32_t var_nv_23_pmx;
+  uint32_t var_nv_25_pmx;
   uint32_t var_nv_2A;
   uint32_t var_nv_2B;
   uint32_t var_nv_2B_last;
   uint32_t var_nv_2F;
   uint32_t var_nv_31;
+  uint32_t var_nv_32;
   char var_nv_10[8];
   uint32_t var_nv_10_state;
 
   /* footer */
   uint64_t magic2;
 } lonStat_t;
-
 
 volatile lonStat_t lon_stat;
 
@@ -260,6 +264,47 @@ void lon_parse(const uint8_t *payload, uint8_t length)
                   }
                   break;
                 }
+                /* PMX (60) NV ID 0x15 is "Fördermenge Soll" */
+                case 0x15:
+                {
+                  if(npdu_src == 60)
+                  {
+                    lon_stat.var_nv_15_pmx = (payload[pos] << 8) | payload[pos+1];
+                  }
+                  break;
+                }
+                /* UML C1 (10) NV ID 0x1B is "Boilertemperatur" */
+                /* PMX (60) NV ID 0x1B is  "Fördermenge Ist" */
+                case 0x1B:
+                {
+                  if(npdu_src == 10)
+                  {
+                    lon_stat.var_nv_1B = (payload[pos] << 8) | payload[pos+1];
+                  }
+                  if(npdu_src == 60)
+                  {
+                    lon_stat.var_nv_1B_pmx = (payload[pos] << 8) | payload[pos+1];
+                  }
+                  break;
+                }
+                /* PMX (60) NV ID 0x23 is "Leistung Soll" */
+                case 0x23:
+                {
+                  if(npdu_src == 60)
+                  {
+                    lon_stat.var_nv_23_pmx = payload[pos];
+                  }
+                  break;
+                }
+                /* PMX (60) NV ID 0x25 is "Leistung" */
+                case 0x25:
+                {
+                  if(npdu_src == 60)
+                  {
+                    lon_stat.var_nv_25_pmx = payload[pos];
+                  }
+                  break;
+                }
                 /* PMX (60) NV ID 0x2A is "Betriebsstunden" */
                 case 0x2A:
                 {
@@ -302,13 +347,12 @@ void lon_parse(const uint8_t *payload, uint8_t length)
                   }
                   break;
                 }
-
-                /* UML C1 (10) NV ID 0x1B is "Boilertemperatur" */
-                case 0x1B:
+                /* PMX (60) NV ID 0x32 is probably "T_Kessel_Soll" */
+                case 0x32:
                 {
-                  if(npdu_src == 10)
+                  if(npdu_src == 60)
                   {
-                    lon_stat.var_nv_1B = (payload[pos] << 8) | payload[pos+1];
+                    lon_stat.var_nv_32 = (payload[pos] << 8) | payload[pos+1];
                   }
                   break;
                 }
@@ -364,7 +408,40 @@ void lon_parse(const uint8_t *payload, uint8_t length)
           {
             return;
           }
-          lon_stat.var_sel_00 = (payload[pos] << 8) | payload[pos+1];
+          lon_stat.var_sel_00 = (int16_t) ((uint16_t)((payload[pos] << 8) | payload[pos+1]));
+          break;
+        }
+        case 0x10:
+        {
+          pos += 2;
+        
+          if(pos + 1 >= length)
+          {
+            return;
+          }
+          lon_stat.var_sel_10 = (payload[pos] << 8) | payload[pos+1];
+          break;
+        }
+        case 0x12:
+        {
+          pos += 2;
+        
+          if(pos + 1 >= length)
+          {
+            return;
+          }
+          lon_stat.var_sel_12 = (payload[pos] << 8) | payload[pos+1];
+          break;
+        }
+        case 0x72:
+        {
+          pos += 2;
+        
+          if(pos + 1 >= length)
+          {
+            return;
+          }
+          lon_stat.var_sel_72 = (payload[pos] << 8) | payload[pos+1];
           break;
         }
         case 0x8A:
@@ -409,6 +486,11 @@ void lon_write(uint8_t *data, uint32_t length)
 {
   uint8_t buffer[100];
   
+  if(length > sizeof(buffer) - 4)
+  {
+    return;
+  }
+  
   memcpy(&buffer[2], data, length);
   
   uint16_t crc = crc16(&buffer[2], length);
@@ -419,19 +501,7 @@ void lon_write(uint8_t *data, uint32_t length)
   buffer[txSize - 2] = crc >> 8;
   buffer[txSize - 1] = crc;
   
-  while(true)
-  {
-    int actStart = lon_rx_activity;
-
-    /* wait for a milisecond-window without activity */
-    delay(5);
-    
-    if(lon_rx_activity == actStart)
-    {
-      lon_tx(buffer, txSize);
-      break;
-    }
-  }
+  lon_tx(buffer, txSize);
 }
 
 void lon_statTime()
@@ -471,11 +541,19 @@ void lon_initStat()
     lon_stat.var_nv_10_state = 0x7FFFFFFF;
     lon_stat.var_nv_12 = 0x7FFFFFFF;
     lon_stat.var_nv_1B = 0x7FFFFFFF;
+    lon_stat.var_nv_15_pmx = 0x7FFFFFFF;
+    lon_stat.var_nv_1B_pmx = 0x7FFFFFFF;
+    lon_stat.var_nv_23_pmx = 0x7FFFFFFF;
+    lon_stat.var_nv_25_pmx = 0x7FFFFFFF;
     lon_stat.var_nv_2A = 0x7FFFFFFF;
     lon_stat.var_nv_2B = 0x7FFFFFFF;
     lon_stat.var_nv_2F = 0x7FFFFFFF;
     lon_stat.var_nv_31 = 0x7FFFFFFF;
+    lon_stat.var_nv_32 = 0x7FFFFFFF;
     lon_stat.var_sel_00 = 0x7FFFFFFF;
+    lon_stat.var_sel_10 = 0x7FFFFFFF;
+    lon_stat.var_sel_12 = 0x7FFFFFFF;
+    lon_stat.var_sel_72 = 0x7FFFFFFF;
     lon_stat.var_sel_110 = 0x7FFFFFFF;
   }
   
@@ -516,8 +594,8 @@ bool lon_loop()
   uint8_t type = 0;
   static int nextTimeSend = 1000;
   static int nextTimeSave = 1000;
-  const uint8_t nvVarsDest[] = {   60,   60,   60,   60,   60,   60,   10 };
-  const uint8_t nvVars[] =     { 0x10, 0x12, 0x2A, 0x2B, 0x2F, 0x31, 0x1B };
+  const uint8_t nvVarsDest[] = {   60,   60,   60,   60,   60,   60,   60,   60,   60,   60,   60,   60,   10 };
+  const uint8_t nvVars[] =     { 0x10, 0x12, 0x15, 0x1B, 0x23, 0x25, 0x2A, 0x2B, 0x2F, 0x31, 0x32, 0x72, 0x1B };
   static int nvVarPos = 0;
   bool hasWork = false;
 
@@ -547,9 +625,6 @@ bool lon_loop()
     
     /* request NV variables */
     lon_write(nvVarCommand, 10);
-    
-    //uint8_t test[] = "\x01\x02\x01\x02\x01\x02\x01\x02\x01\x02\x01\x02\x01\x02\x01\x02\x01\x02\x01\x02";
-    //lon_write((uint8_t*)test, sizeof(test));
     
     nextTimeSend = curTime + 5000;
     hasWork = true;

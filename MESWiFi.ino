@@ -6,6 +6,8 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+//#define LOCAL_BITDEBUG_MODE
+
 bool ota_active = false;
 
 void setup()
@@ -54,6 +56,13 @@ void setup()
 
 void loop()
 {
+#if defined(LOCAL_BITDEBUG_MODE)
+    uint8_t *data = (uint8_t *)"\x01\x01\x01\x01\x01\x01\x01\x03\x03\x03\x03\x03\x03\x03\x03\x07\x07\x07\x07\x07\x07\x07\x01\x01\x01\x01\x01\x01";
+    lon_write(data, 26);
+    delay(100);
+    return;
+#endif
+  
   bool hasWork = false;
 
   if(!ota_active)
@@ -62,8 +71,10 @@ void loop()
     hasWork |= wifi_loop();
     hasWork |= time_loop();
     hasWork |= lon_loop();
+#if !defined(LOCAL_BITDEBUG_MODE)
     //hasWork |= mqtt_loop();
     //hasWork |= push_loop();
+#endif
     hasWork |= tempsens_loop();
     hasWork |= relays_loop();
   }
@@ -71,7 +82,7 @@ void loop()
 
   if(!hasWork)
   {
-    delay(100);
+    delay(5);
   }
 }
 

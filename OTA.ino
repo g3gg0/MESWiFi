@@ -5,7 +5,7 @@ WiFiServer ota_knock(80);
 
 void ota_setup()
 {
-  ArduinoOTA.setHostname("MES-WiFi-v1-1");
+  ArduinoOTA.setHostname("MES-WiFi-v1-4");
 
   ArduinoOTA
     .onStart([]() {
@@ -63,20 +63,20 @@ bool ota_loop()
       if(!ota_allowed)
       {
         ota_allowed = true;
-        offTime = curTime + 60000;
-        ArduinoOTA.begin();
+        offTime = curTime + 10*60000;
         Serial.println("[OTA] Enabled");
         client.println("[OTA] Enabled");
+        ArduinoOTA.begin();
         lon_save = true;
       }
       else
       {
         offTime = curTime + 60000;
-        client.println("[OTA] Already enabled");
+        Serial.println("[OTA] Already enabled");
         client.println("[OTA] Already enabled");
       }
+      client.stop();
     }
-    client.stop();
   }
 
   return ota_active;

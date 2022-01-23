@@ -123,7 +123,20 @@ bool mqtt_loop()
       
       mqtt.publish("feeds/string/heizung/display", (const char*)lon_stat.var_nv_10);
       mqtt_publish_float("feeds/float/heizung/temp-pcb", tempsens_value);
+      
+      mqtt_publish_int("feeds/integer/heizung/foerder-soll", lon_stat.var_nv_15_pmx);
+      mqtt_publish_int("feeds/integer/heizung/foerder-berech", lon_stat.var_nv_1B_pmx);
 
+      if(lon_stat.var_nv_23_pmx != 0x7FFFFFFF)
+      {
+        mqtt_publish_float("feeds/float/heizung/leistung-soll", lon_stat.var_nv_23_pmx / 2.0f);
+      }
+      if(lon_stat.var_nv_25_pmx != 0x7FFFFFFF)
+      {
+        mqtt_publish_float("feeds/float/heizung/leistung", lon_stat.var_nv_25_pmx / 2.0f);
+      }
+
+      
       if(lon_stat.var_nv_2F != 0x7FFFFFFF)
       {
         mqtt_publish_float("feeds/float/heizung/temp-kammer", (lon_stat.var_nv_2F / 10.0f) - 273.15f);
@@ -132,6 +145,10 @@ bool mqtt_loop()
       {
         mqtt_publish_float("feeds/float/heizung/temp-abgas", (lon_stat.var_nv_31 / 10.0f) - 273.15f);
       }
+      if(lon_stat.var_nv_32 != 0x7FFFFFFF)
+      {
+        mqtt_publish_float("feeds/float/heizung/temp-kessel-soll", lon_stat.var_nv_32 / 100.0f);
+      }
       if(lon_stat.var_sel_110 != 0x7FFFFFFF)
       {
         mqtt_publish_float("feeds/float/heizung/temp-kessel", lon_stat.var_sel_110 / 100.0f);
@@ -139,6 +156,19 @@ bool mqtt_loop()
       if(lon_stat.var_sel_00 != 0x7FFFFFFF)
       {
         mqtt_publish_float("feeds/float/heizung/temp-aussen", lon_stat.var_sel_00 / 100.0f);
+      }
+      if(lon_stat.var_sel_10 != 0x7FFFFFFF)
+      {
+        mqtt_publish_float("feeds/float/heizung/temp-vorlauf-soll-hk", lon_stat.var_sel_10 / 100.0f);
+      }
+      if(lon_stat.var_sel_12 != 0x7FFFFFFF)
+      {
+        mqtt_publish_float("feeds/float/heizung/temp-vorlauf-soll-ww", lon_stat.var_sel_12 / 100.0f);
+      }
+      
+      if(lon_stat.var_sel_72 != 0x7FFFFFFF)
+      {
+        mqtt_publish_float("feeds/float/heizung/temp-soll-ww", lon_stat.var_sel_72 / 100.0f);
       }
       if(lon_stat.var_nv_1B != 0x7FFFFFFF)
       {

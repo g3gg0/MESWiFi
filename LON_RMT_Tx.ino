@@ -99,6 +99,19 @@ void lon_tx(uint8_t *data, uint8_t length)
   items[length * 8 + 0].duration1 = 2*shortBit;
   items[length * 8 + 1].duration0 = 0;
   items[length * 8 + 1].duration1 = 0;
+
+  /* wait for a milisecond-window without activity */
+  while(true)
+  {
+    int actStart = lon_rx_activity;
+
+    delay(2);
+    
+    if(lon_rx_activity == actStart)
+    {
+      break;
+    }
+  }
   
   lon_tx_done = false;
   lon_tx_running = true;

@@ -46,9 +46,11 @@ intr_handle_t lon_rx_inthandle = NULL;
 
 #define LON_RMT_BUFFER_LEN 255*2*8
 uint16_t lon_rmt_buffer[LON_RMT_BUFFER_LEN];
+uint8_t lon_rmt_bitmiss[8];
 uint32_t lon_rmt_buffer_pos = 0;
 
-static uint32_t bits_overlap = 1;
+static uint32_t bits_overlap = 3;
+static uint32_t bits_missed_on_error = 2;
 
 static inline int IRAM_ATTR lon_rx_valid(int duration)
 {
@@ -286,16 +288,16 @@ static void IRAM_ATTR lon_rx_start_rmt(uint32_t channel)
 }
 
 
-static uint32_t IRAM_ATTR lon_rx_queue(uint32_t channel)
+static uint32_t IRAM_ATTR lon_rx_queue(uint32_t channel, int lost)
 {
   uint32_t rmt_items = (RMT.status_ch[channel] & 0x3FF) - (channel * 0x40);
-  uint32_t entries = (rmt_items * 2) - bits_overlap;
+  uint32_t entries = (rmt_items * 2) - bits_overlap + lost;
   uint32_t size = entries * sizeof(uint16_t);
   uint16_t* items = (uint16_t*) &RMTMEM.chan[channel];
 
   if(lon_rmt_buffer_pos + entries < LON_RMT_BUFFER_LEN)
   {
-    memcpy(&lon_rmt_buffer[lon_rmt_buffer_pos], &items[bits_overlap], size);
+    memcpy(&lon_rmt_buffer[lon_rmt_buffer_pos], &items[bits_overlap-lost], size);
     lon_rmt_buffer_pos += entries;
   }
   
@@ -315,7 +317,7 @@ static IRAM_ATTR void lon_rx_rmt_check(uint32_t channel)
   if(RMT.int_st.val & LON_RX_RMT_INT_RX_END(channel))
   {
     RMT.int_clr.val = LON_RX_RMT_INT_RX_END(channel);
-    lon_rx_queue(channel);
+    lon_rx_queue(channel, lon_rmt_bitmiss[channel]);
   }
 
   /* ERR interrupts happen whenever a buffer overrun happened */
@@ -327,8 +329,13 @@ static IRAM_ATTR void lon_rx_rmt_check(uint32_t channel)
        check for error flag instead of believing the interrupt */
     if(((RMT.status_ch[channel] >> 28) & 0x01) == 1)
     {
-      lon_rx_queue(channel);
+      lon_rx_queue(channel, lon_rmt_bitmiss[channel]);
     }
+
+    /* when this RMT was in error state (was overflowed as we have more bits than the buffer can hold),
+     * it goes into some error state and misses two bits next time. compensate that. ugly...
+     */
+    lon_rmt_bitmiss[channel] = bits_missed_on_error;
   }
 }
 
@@ -360,6 +367,7 @@ static void IRAM_ATTR lon_rx_pin_isr()
       lon_rx_running = true;
       lon_rx_bit(0xFFFFFFFF);
       lon_rx_start_rmt(LON_RX_RMT_CHANNEL_A);
+      memset(lon_rmt_bitmiss, 0x00, sizeof(lon_rmt_bitmiss));
     }
   }
   else if(lon_rx_running)

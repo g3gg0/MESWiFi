@@ -2,8 +2,8 @@
 #include "driver/rmt.h"
 
 #define LON_RX_RMT_CHANNEL_A RMT_CHANNEL_0
-#define LON_RX_RMT_CHANNEL_B RMT_CHANNEL_2
-#define LON_RX_RMT_MEMBLOCKS 2
+#define LON_RX_RMT_CHANNEL_B RMT_CHANNEL_4
+#define LON_RX_RMT_MEMBLOCKS 4
 #define LON_RX_RMT_GPIO LON_RX
 
 #define LON_RX_RMT_INT_TX_END_B (1)
@@ -380,13 +380,13 @@ static void IRAM_ATTR lon_rx_pin_isr()
         {
             switch ((edge_count / (LON_RX_EDGES_PER_CH - bits_overlap)) % 2)
             {
-            case 0:
-                lon_rx_start_rmt(LON_RX_RMT_CHANNEL_A);
-                break;
+                case 0:
+                    lon_rx_start_rmt(LON_RX_RMT_CHANNEL_A);
+                    break;
 
-            case 1:
-                lon_rx_start_rmt(LON_RX_RMT_CHANNEL_B);
-                break;
+                case 1:
+                    lon_rx_start_rmt(LON_RX_RMT_CHANNEL_B);
+                    break;
             }
         }
     }

@@ -8,6 +8,8 @@
 WebServer webserver(80);
 extern char wifi_error[];
 extern bool wifi_captive;
+extern volatile lonStat_t lon_stat;
+
 int www_wifi_scanned = -1;
 int www_last_captive = 0;
 

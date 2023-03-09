@@ -211,7 +211,7 @@ bool mqtt_loop()
                where
                   timestep = miliseconds since last read
             */
-            foerder_integral += ((float)lon_stat.var_nv_15_pmx * 4.8f * expired_ms) / (60.0f * 60.0f * 1000.0f);
+            foerder_integral += ((float)lon_stat.var_nv_15_pmx / 10.0f * 4.8f * expired_ms) / (60.0f * 60.0f * 1000.0f);
             mqtt_publish_float("feeds/float/%s/foerder-integral-kWh", foerder_integral);
 
             if (lon_stat.var_nv_23_pmx != 0x7FFFFFFF)

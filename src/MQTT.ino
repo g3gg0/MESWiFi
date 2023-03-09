@@ -13,6 +13,8 @@ extern uint32_t lon_rx_count;
 extern uint32_t lon_crc_errors;
 extern t_cfg current_config;
 
+float foerder_integral = 0;
+
 int mqtt_last_publish_time = 0;
 int mqtt_lastConnect = 0;
 int mqtt_retries = 0;
@@ -175,8 +177,6 @@ bool mqtt_loop()
 
         if (do_publish)
         {
-            mqtt_last_publish_time = time;
-
             /* debug */
             mqtt_publish_int("feeds/integer/%s/burning-minutes", lon_stat.burning_minutes);
             mqtt_publish_int("feeds/integer/%s/last-error-minutes", lon_stat.last_error_minutes);
@@ -204,6 +204,15 @@ bool mqtt_loop()
 
             mqtt_publish_int("feeds/integer/%s/foerder-soll", lon_stat.var_nv_15_pmx);
             mqtt_publish_int("feeds/integer/%s/foerder-berech", lon_stat.var_nv_1B_pmx);
+
+            int expired_ms = (time - mqtt_last_publish_time);
+            /* calc energy with
+                  kg/h  *  kWh/kg  /  timestep
+               where
+                  timestep = miliseconds since last read
+            */
+            foerder_integral += ((float)lon_stat.var_nv_15_pmx * 4.8f * expired_ms) / (60.0f * 60.0f * 1000.0f);
+            mqtt_publish_float("feeds/float/%s/foerder-integral-kWh", foerder_integral);
 
             if (lon_stat.var_nv_23_pmx != 0x7FFFFFFF)
             {
@@ -249,6 +258,8 @@ bool mqtt_loop()
             {
                 mqtt_publish_float("feeds/float/%s/temp-speicher", lon_stat.var_nv_1B / 100.0f);
             }
+
+            mqtt_last_publish_time = time;
         }
         nextTime = time + 1000;
     }

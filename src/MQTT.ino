@@ -108,7 +108,7 @@ void mqtt_setup()
     t_ha_entity entity;
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_ota";
+    entity.id = "ota";
     entity.name = "Enable OTA";
     entity.type = ha_button;
     entity.cmd_t = "command/%s/ota";
@@ -116,7 +116,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_rssi";
+    entity.id = "rssi";
     entity.name = "WiFi RSSI";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/integer/%s/rssi";
@@ -124,7 +124,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_error";
+    entity.id = "error";
     entity.name = "Error message";
     entity.type = ha_text;
     entity.stat_t = "feeds/string/%s/error";
@@ -132,7 +132,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_burning-minutes";
+    entity.id = "burning-minutes";
     entity.name = "Brenndauer";
     entity.state_class = "total_increasing";
     entity.dev_class = "duration";
@@ -142,7 +142,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_last-error-minutes";
+    entity.id = "last-error-minutes";
     entity.name = "Letzter Fehlerzeitpunkt";
     entity.dev_class = "duration";
     entity.type = ha_sensor;
@@ -151,7 +151,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_last-error-delta";
+    entity.id = "last-error-delta";
     entity.name = "Zeit seit letztem Fehler";
     entity.dev_class = "duration";
     entity.type = ha_sensor;
@@ -160,7 +160,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_rx-count";
+    entity.id = "rx-count";
     entity.name = "Botschaftszähler Rx";
     entity.state_class = "total_increasing";
     entity.type = ha_sensor;
@@ -168,7 +168,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_rx-crc";
+    entity.id = "rx-crc";
     entity.name = "Botschaftszähler Rx CRC-Fehler";
     entity.state_class = "total_increasing";
     entity.type = ha_sensor;
@@ -176,14 +176,14 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_fehlercode";
+    entity.id = "fehlercode";
     entity.name = "Fehlercode";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/integer/%s/fehlercode";
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_drehzahl";
+    entity.id = "drehzahl";
     entity.name = "Drehzahl";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/integer/%s/drehzahl";
@@ -191,7 +191,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_betriebsstunden";
+    entity.id = "betriebsstunden";
     entity.name = "Betriebsstunden";
     entity.dev_class = "duration";
     entity.state_class = "total_increasing";
@@ -201,7 +201,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_anheiz-count";
+    entity.id = "anheiz-count";
     entity.name = "Anheizzähler";
     entity.state_class = "total_increasing";
     entity.type = ha_sensor;
@@ -209,14 +209,14 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_zustand";
+    entity.id = "zustand";
     entity.name = "Zustand";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/integer/%s/zustand";
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_display";
+    entity.id = "display";
     entity.name = "Displayanzeige";
     entity.type = ha_text;
     entity.stat_t = "feeds/string/%s/display";
@@ -224,7 +224,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_foerder-soll";
+    entity.id = "foerder-soll";
     entity.name = "Fördermenge/h soll";
     entity.dev_class = "weight";
     entity.type = ha_sensor;
@@ -234,7 +234,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_foerder-berech";
+    entity.id = "foerder-berech";
     entity.name = "Fördermenge/h berechnet";
     entity.dev_class = "weight";
     entity.type = ha_sensor;
@@ -244,7 +244,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_foerder-integral-kWh";
+    entity.id = "foerder-integral-kWh";
     entity.name = "Fördermenge integriert";
     entity.dev_class = "energy";
     entity.state_class = "total_increasing";
@@ -254,7 +254,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_leistung";
+    entity.id = "leistung";
     entity.name = "Leistung ist";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/float/%s/leistung-soll";
@@ -262,7 +262,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_leistung-soll";
+    entity.id = "leistung-soll";
     entity.name = "Leistung soll";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/float/%s/leistung-soll";
@@ -270,7 +270,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-pcb";
+    entity.id = "temp-pcb";
     entity.name = "Steuereinheit";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -279,7 +279,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-kammer";
+    entity.id = "temp-kammer";
     entity.name = "Temperatur Brennkammer";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -288,7 +288,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-abgas";
+    entity.id = "temp-abgas";
     entity.name = "Temperatur Abgas";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -297,7 +297,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-kessel-soll";
+    entity.id = "temp-kessel-soll";
     entity.name = "Temperatur Kessel soll";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -306,7 +306,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-kessel";
+    entity.id = "temp-kessel";
     entity.name = "Temperatur Kessel";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -315,7 +315,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-aussen";
+    entity.id = "temp-aussen";
     entity.name = "Temperatur Aussen";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -324,7 +324,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-vorlauf-soll-hk";
+    entity.id = "temp-vorlauf-soll-hk";
     entity.name = "Temperatur Vorlauf Heizkörper soll";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -333,7 +333,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-vorlauf-soll-ww";
+    entity.id = "temp-vorlauf-soll-ww";
     entity.name = "Temperatur Vorlauf Warmwasser soll";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -342,7 +342,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-soll-ww";
+    entity.id = "temp-soll-ww";
     entity.name = "Temperatur Warmwasser soll";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
@@ -351,7 +351,7 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "mes_wifi_temp-speicher";
+    entity.id = "temp-speicher";
     entity.name = "Temperatur Speicher";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";

@@ -1,26 +1,20 @@
+
 #include <DNSServer.h>
+
 DNSServer dnsServer;
 
 bool connecting = false;
 bool wifi_captive = false;
 char wifi_error[64];
+int wifi_rssi = 0;
 
 void wifi_setup()
 {
-    if(strlen(current_config.wifi_ssid) == 0)
-    {
-        sprintf(wifi_error, "SSID is empty");
-        Serial.printf("[WiFi] Entering captive mode. Reason: '%s'\n", wifi_error);
-        wifi_enter_captive();
-    }
-    else
-    {
-        Serial.printf("[WiFi] Connecting to '%s', password '%s'...\n", current_config.wifi_ssid, current_config.wifi_password);
-        sprintf(wifi_error, "");
-        WiFi.begin(current_config.wifi_ssid, current_config.wifi_password);
-        connecting = true;
-        led_set(1, 8, 8, 0);
-    }
+    Serial.printf("[WiFi] Connecting to '%s', password '%s'...\n", current_config.wifi_ssid, current_config.wifi_password);
+    sprintf(wifi_error, "");
+    WiFi.begin(current_config.wifi_ssid, current_config.wifi_password);
+    connecting = true;
+    led_set(1, 8, 8, 0);
 }
 
 void wifi_off()
@@ -46,9 +40,9 @@ void wifi_enter_captive()
 bool wifi_loop(void)
 {
     int status = WiFi.status();
-    int curTime = millis();
-    static int nextTime = 0;
-    static int stateCounter = 0;
+    uint32_t curTime = millis();
+    static uint32_t nextTime = 0;
+    static uint32_t stateCounter = 0;
 
     if (wifi_captive)
     {
@@ -110,13 +104,13 @@ bool wifi_loop(void)
             else
             {
                 static int last_rssi = -1;
-                int rssi = WiFi.RSSI();
+                wifi_rssi = WiFi.RSSI();
 
-                if (last_rssi != rssi)
+                if (last_rssi != wifi_rssi)
                 {
                     float maxRssi = -70;
                     float minRssi = -90;
-                    float strRatio = (rssi - minRssi) / (maxRssi - minRssi);
+                    float strRatio = (wifi_rssi - minRssi) / (maxRssi - minRssi);
                     float strength = min(1, max(0, strRatio));
                     float brightness = 0.05f;
                     int r = brightness * 255.0f * (1.0f - strength);
@@ -124,12 +118,12 @@ bool wifi_loop(void)
 
                     led_set(1, r, g, 0);
 
-                    if (current_config.verbose & 1)
+                    if(current_config.verbose & 1)
                     {
-                        Serial.printf("[WiFi] RSSI %d, strength: %1.2f, r: %d, g: %d\n", rssi, strength, r, g);
+                        Serial.printf("[WiFi] RSSI %d, strength: %1.2f, r: %d, g: %d\n", wifi_rssi, strength, r, g);
                     }
 
-                    last_rssi = rssi;
+                    last_rssi = wifi_rssi;
                 }
 
                 /* happy with this state, reset counter */

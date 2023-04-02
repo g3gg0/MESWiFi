@@ -3,7 +3,7 @@
 
 bool ota_active = false;
 bool ota_setup_done = false;
-long ota_offtime = 0;
+uint32_t ota_offtime = 0;
 
 void ota_setup()
 {

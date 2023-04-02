@@ -1,28 +1,29 @@
 
-//#define TESTMODE
+// #define TESTMODE
 
 #include <PubSubClient.h>
 #include <ESP32httpUpdate.h>
 #include <Config.h>
 
+#include "HA.h"
 
 WiFiClient client;
 PubSubClient mqtt(client);
 
+extern int wifi_rssi;
 extern uint32_t lon_rx_count;
 extern uint32_t lon_crc_errors;
 extern t_cfg current_config;
 
 float foerder_integral = 0;
 
-int mqtt_last_publish_time = 0;
-int mqtt_lastConnect = 0;
-int mqtt_retries = 0;
+uint32_t mqtt_last_publish_time = 0;
+uint32_t mqtt_lastConnect = 0;
+uint32_t mqtt_retries = 0;
 bool mqtt_fail = false;
 
 char command_topic[64];
 char response_topic[64];
-
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
@@ -39,6 +40,8 @@ void callback(char *topic, byte *payload, unsigned int length)
 
     payload[length] = 0;
 
+    ha_received(topic, (const char *)payload);
+
     if (!strcmp(topic, command_topic))
     {
         char *command = (char *)payload;
@@ -46,7 +49,7 @@ void callback(char *topic, byte *payload, unsigned int length)
 
         if (!strncmp(command, "http", 4))
         {
-            snprintf(buf, sizeof(buf)-1, "updating from: '%s'", command);
+            snprintf(buf, sizeof(buf) - 1, "updating from: '%s'", command);
             Serial.printf("%s\n", buf);
 
             mqtt.publish(response_topic, buf);
@@ -55,45 +58,306 @@ void callback(char *topic, byte *payload, unsigned int length)
 
             switch (ret)
             {
-                case HTTP_UPDATE_FAILED:
-                    snprintf(buf, sizeof(buf)-1, "HTTP_UPDATE_FAILED Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-                    mqtt.publish(response_topic, buf);
-                    Serial.printf("%s\n", buf);
-                    break;
+            case HTTP_UPDATE_FAILED:
+                snprintf(buf, sizeof(buf) - 1, "HTTP_UPDATE_FAILED Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+                mqtt.publish(response_topic, buf);
+                Serial.printf("%s\n", buf);
+                break;
 
-                case HTTP_UPDATE_NO_UPDATES:
-                    snprintf(buf, sizeof(buf)-1, "HTTP_UPDATE_NO_UPDATES");
-                    mqtt.publish(response_topic, buf);
-                    Serial.printf("%s\n", buf);
-                    break;
+            case HTTP_UPDATE_NO_UPDATES:
+                snprintf(buf, sizeof(buf) - 1, "HTTP_UPDATE_NO_UPDATES");
+                mqtt.publish(response_topic, buf);
+                Serial.printf("%s\n", buf);
+                break;
 
-                case HTTP_UPDATE_OK:
-                    snprintf(buf, sizeof(buf)-1, "HTTP_UPDATE_OK");
-                    mqtt.publish(response_topic, buf);
-                    Serial.printf("%s\n", buf);
-                    delay(500);
-                    ESP.restart();
-                    break;
+            case HTTP_UPDATE_OK:
+                snprintf(buf, sizeof(buf) - 1, "HTTP_UPDATE_OK");
+                mqtt.publish(response_topic, buf);
+                Serial.printf("%s\n", buf);
+                delay(500);
+                ESP.restart();
+                break;
 
-                default:
-                    snprintf(buf, sizeof(buf)-1, "update failed");
-                    mqtt.publish(response_topic, buf);
-                    Serial.printf("%s\n", buf);
-                    break;
+            default:
+                snprintf(buf, sizeof(buf) - 1, "update failed");
+                mqtt.publish(response_topic, buf);
+                Serial.printf("%s\n", buf);
+                break;
             }
         }
         else
         {
-            snprintf(buf, sizeof(buf)-1, "unknown command: '%s'", command);
+            snprintf(buf, sizeof(buf) - 1, "unknown command: '%s'", command);
             mqtt.publish(response_topic, buf);
             Serial.printf("%s\n", buf);
         }
     }
 }
 
+void mqtt_ota_received(const t_ha_entity *entity, void *ctx, const char *message)
+{
+    ota_setup();
+}
+
 void mqtt_setup()
 {
     mqtt.setCallback(callback);
+
+    ha_setup();
+
+    t_ha_entity entity;
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "ota";
+    entity.name = "Enable OTA";
+    entity.type = ha_button;
+    entity.cmd_t = "command/%s/ota";
+    entity.received = &mqtt_ota_received;
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "rssi";
+    entity.name = "WiFi RSSI";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/rssi";
+    entity.unit_of_meas = "dBm";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "error";
+    entity.name = "Error message";
+    entity.type = ha_text;
+    entity.stat_t = "feeds/string/%s/error";
+    entity.cmd_t = "feeds/string/%s/error";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "burning-minutes";
+    entity.name = "Brenndauer";
+    entity.state_class = "total_increasing";
+    entity.dev_class = "duration";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/burning-minutes";
+    entity.unit_of_meas = "min";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "last-error-minutes";
+    entity.name = "Letzter Fehlerzeitpunkt";
+    entity.dev_class = "duration";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/last-error-minutes";
+    entity.unit_of_meas = "min";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "last-error-delta";
+    entity.name = "Zeit seit letztem Fehler";
+    entity.dev_class = "duration";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/last-error-delta";
+    entity.unit_of_meas = "min";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "rx-count";
+    entity.name = "Botschaftszähler Rx";
+    entity.state_class = "total_increasing";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/rx-count";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "rx-crc";
+    entity.name = "Botschaftszähler Rx CRC-Fehler";
+    entity.state_class = "total_increasing";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/rx-crc";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "fehlercode";
+    entity.name = "Fehlercode";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/fehlercode";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "drehzahl";
+    entity.name = "Drehzahl";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/drehzahl";
+    entity.unit_of_meas = "rpm";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "betriebsstunden";
+    entity.name = "Betriebsstunden";
+    entity.dev_class = "duration";
+    entity.state_class = "total_increasing";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/betriebsstunden";
+    entity.unit_of_meas = "h";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "anheiz-count";
+    entity.name = "Anheizzähler";
+    entity.state_class = "total_increasing";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/anheiz-count";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "zustand";
+    entity.name = "Zustand";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/zustand";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "display";
+    entity.name = "Displayanzeige";
+    entity.type = ha_text;
+    entity.stat_t = "feeds/string/%s/display";
+    entity.cmd_t = "feeds/string/%s/display";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "foerder-soll";
+    entity.name = "Fördermenge/h soll";
+    entity.dev_class = "weight";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/foerder-soll";
+    entity.val_tpl = "{{ (value|float) / 10 }}";
+    entity.unit_of_meas = "kg";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "foerder-berech";
+    entity.name = "Fördermenge/h berechnet";
+    entity.dev_class = "weight";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/integer/%s/foerder-berech";
+    entity.val_tpl = "{{ (value|float) / 10 }}";
+    entity.unit_of_meas = "kg";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "foerder-integral-kWh";
+    entity.name = "Fördermenge integriert";
+    entity.dev_class = "energy";
+    entity.state_class = "total_increasing";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/foerder-integral-kWh";
+    entity.unit_of_meas = "kWh";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "leistung";
+    entity.name = "Leistung ist";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/leistung-soll";
+    entity.unit_of_meas = "%";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "leistung-soll";
+    entity.name = "Leistung soll";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/leistung-soll";
+    entity.unit_of_meas = "%";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-pcb";
+    entity.name = "Steuereinheit";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-pcb";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-kammer";
+    entity.name = "Temperatur Brennkammer";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-kammer";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-abgas";
+    entity.name = "Temperatur Abgas";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-abgas";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-kessel-soll";
+    entity.name = "Temperatur Kessel soll";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-kessel-soll";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-kessel";
+    entity.name = "Temperatur Kessel";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-kessel";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-aussen";
+    entity.name = "Temperatur Aussen";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-aussen";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-vorlauf-soll-hk";
+    entity.name = "Temperatur Vorlauf Heizkörper soll";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-vorlauf-soll-hk";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-vorlauf-soll-ww";
+    entity.name = "Temperatur Vorlauf Warmwasser soll";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-vorlauf-soll-ww";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-soll-ww";
+    entity.name = "Temperatur Warmwasser soll";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-soll-ww";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-speicher";
+    entity.name = "Temperatur Speicher";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/temp-speicher";
+    ha_add(&entity);
 }
 
 void mqtt_publish_string(const char *name, const char *value)
@@ -146,7 +410,7 @@ void mqtt_publish_int(const char *name, uint32_t value)
 bool mqtt_loop()
 {
     uint32_t time = millis();
-    static int nextTime = 0;
+    static uint32_t nextTime = 0;
 
 #ifdef TESTMODE
     return false;
@@ -166,6 +430,8 @@ bool mqtt_loop()
 
     mqtt.loop();
 
+    ha_loop();
+
     if (time >= nextTime)
     {
         bool do_publish = false;
@@ -178,6 +444,8 @@ bool mqtt_loop()
         if (do_publish)
         {
             /* debug */
+            mqtt_publish_int("feeds/integer/%s/rssi", wifi_rssi);
+
             mqtt_publish_int("feeds/integer/%s/burning-minutes", lon_stat.burning_minutes);
             mqtt_publish_int("feeds/integer/%s/last-error-minutes", lon_stat.last_error_minutes);
 
@@ -188,7 +456,7 @@ bool mqtt_loop()
             mqtt_publish_int("feeds/integer/%s/time-hour", timeStruct.tm_hour);
             mqtt_publish_int("feeds/integer/%s/time-minute", timeStruct.tm_min);
             mqtt_publish_int("feeds/integer/%s/ignite-stat-pos", lon_stat.igniteStatPos);
-            
+
             mqtt_publish_int("feeds/integer/%s/anheiz-stat", lon_stat.ignites_24h);
             mqtt_publish_int("feeds/integer/%s/rx-count", lon_stat.rx_count);
             mqtt_publish_int("feeds/integer/%s/rx-crc", lon_stat.crc_errors);
@@ -269,7 +537,7 @@ bool mqtt_loop()
 
 void MQTT_connect()
 {
-    int curTime = millis();
+    uint32_t curTime = millis();
     int8_t ret;
 
     if (strlen(current_config.mqtt_server) == 0)
@@ -278,7 +546,7 @@ void MQTT_connect()
     }
 
     mqtt.setServer(current_config.mqtt_server, current_config.mqtt_port);
-    
+
     if (WiFi.status() != WL_CONNECTED)
     {
         return;
@@ -297,7 +565,7 @@ void MQTT_connect()
     mqtt_lastConnect = curTime;
 
     Serial.println("MQTT: Connecting to MQTT... ");
-    
+
     sprintf(command_topic, "tele/%s/command", current_config.mqtt_client);
     sprintf(response_topic, "tele/%s/response", current_config.mqtt_client);
 
@@ -318,6 +586,7 @@ void MQTT_connect()
     {
         Serial.println("MQTT Connected!");
         mqtt.subscribe(command_topic);
+        ha_connected();
         mqtt_publish_string((char *)"feeds/string/%s/error", "");
     }
 }

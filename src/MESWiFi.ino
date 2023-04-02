@@ -6,7 +6,9 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
-//#define LOCAL_BITDEBUG_MODE
+#include "HA.h"
+
+// #define LOCAL_BITDEBUG_MODE
 
 extern bool ota_active;
 
@@ -28,7 +30,6 @@ void setup()
     Serial.printf("[i] SPIRam        %d/%d\n", ESP.getFreePsram(), ESP.getPsramSize());
     Serial.printf("\n");
     Serial.printf("[i] Starting\n");
-
 
     Serial.printf("[i]   Setup SPIFFS\n");
     if (!SPIFFS.begin(true))
@@ -53,7 +54,7 @@ void setup()
     relays_setup();
     Serial.printf("[i]   Setup Temperature sensors\n");
     tempsens_setup();
-    
+
     Serial.println("Setup done");
 
     relays_set(0, true);

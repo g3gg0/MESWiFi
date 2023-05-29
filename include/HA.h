@@ -1,8 +1,7 @@
-#ifndef __HA_H__
-#define __HA_H__
+#pragma once
 
 #define MAX_LEN 32
-#define MAX_ENTITIES 32
+#define MAX_ENTITIES 48
 
 typedef enum
 {
@@ -18,7 +17,9 @@ typedef enum
     /* https://www.home-assistant.io/integrations/select.mqtt/ */
     ha_select,
     /* https://www.home-assistant.io/integrations/binary_sensor.mqtt/ */
-    ha_binary_sensor
+    ha_binary_sensor,
+    /* https://www.home-assistant.io/integrations/ha_light.mqtt/ */
+    ha_light
 } t_ha_device_type;
 
 typedef struct s_ha_entity t_ha_entity;
@@ -42,19 +43,38 @@ struct s_ha_entity
     const char *cmd_t;
     /* used by: sensor, binary_sensor, number, text */
     const char *stat_t;
+    /* used by: light */
+    const char *rgb_t;
+    const char *rgbw_t;
     /* used by: switch, comma separated */
     const char *options;
     /* used by: number */
     float min;
     /* used by: number */
     float max;
+    /* used by: number */
+    const char *mode;
     /* icon */
     const char *ic;
     /* entity_category */
     const char *ent_cat;
 
+    /* used by: light */
+    const char *fx_cmd_t;
+    /* used by: light */
+    const char *fx_stat_t;
+    /* used by: light, comma separated */
+    const char *fx_list;
+
+    /* alternative client name */
+    const char *alt_name;
+
     void (*received)(const t_ha_entity *, void *, const char *);
     void *received_ctx;
+    void (*rgb_received)(const t_ha_entity *, void *, const char *);
+    void *rgb_received_ctx;
+    void (*fx_received)(const t_ha_entity *, void *, const char *);
+    void *fx_received_ctx;
     void (*transmit)(const t_ha_entity *, void *);
     void *transmit_ctx;
 };
@@ -77,9 +97,9 @@ bool ha_loop();
 void ha_transmit_all();
 void ha_publish();
 void ha_add(t_ha_entity *entity);
+void ha_addmqtt(char *json_str, const char *name, const char *value, t_ha_entity *entity, bool last);
 void ha_received(char *topic, const char *payload);
 void ha_transmit(const t_ha_entity *entity, const char *value);
+void ha_transmit_topic(const char *stat_t, const char *value);
 int ha_parse_index(const char *options, const char *message);
 void ha_get_index(const char *options, int index, char *text);
-
-#endif

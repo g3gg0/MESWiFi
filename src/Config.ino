@@ -37,7 +37,6 @@ void cfg_reset()
     strcpy(current_config.mqtt_client, CONFIG_OTANAME);
     current_config.mqtt_publish = 0;
 
-    current_config.verbose = 7;
 
     strcpy(current_config.wifi_ssid, "(not set)");
     strcpy(current_config.wifi_password, "(not set)");

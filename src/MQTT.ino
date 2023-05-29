@@ -126,9 +126,8 @@ void mqtt_setup()
     memset(&entity, 0x00, sizeof(entity));
     entity.id = "error";
     entity.name = "Error message";
-    entity.type = ha_text;
+    entity.type = ha_sensor;
     entity.stat_t = "feeds/string/%s/error";
-    entity.cmd_t = "feeds/string/%s/error";
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));

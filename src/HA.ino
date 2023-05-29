@@ -1,9 +1,11 @@
 
+#include <Arduino.h>
+#include <WiFi.h>
 #include <PubSubClient.h>
 #include <Config.h>
 
-#include "HA.h"
-#include "Macros.h"
+#include <HA.h>
+#include <Macros.h>
 
 t_ha_info ha_info;
 extern PubSubClient mqtt;
@@ -63,14 +65,22 @@ void ha_addstr(char *json_str, const char *name, const char *value, bool last = 
     }
 }
 
-void ha_addmqtt(char *json_str, const char *name, const char *value, bool last = false)
+void ha_addmqtt(char *json_str, const char *name, const char *value, t_ha_entity *entity, bool last = false)
 {
     char tmp_buf[128];
 
     if (value && strlen(value) > 0)
     {
         char path_buffer[64];
-        sprintf(path_buffer, value, current_config.mqtt_client);
+
+        if (entity && entity->alt_name)
+        {
+            sprintf(path_buffer, value, entity->alt_name);
+        }
+        else
+        {
+            sprintf(path_buffer, value, current_config.mqtt_client);
+        }
         snprintf(tmp_buf, sizeof(tmp_buf), "\"%s\": \"%s\"%c ", name, path_buffer, (last ? ' ' : ','));
         strcat(json_str, tmp_buf);
     }
@@ -94,7 +104,7 @@ void ha_addint(char *json_str, const char *name, int value, bool last = false)
 
 void ha_publish()
 {
-    char *json_str = (char *)malloc(512);
+    char *json_str = (char *)malloc(1024);
     char mqtt_path[128];
     char uniq_id[128];
 
@@ -104,7 +114,7 @@ void ha_publish()
 
     for (int pos = 0; pos < ha_info.entitiy_count; pos++)
     {
-        const char *type = "undefined";
+        const char *type = NULL;
 
         switch (ha_info.entities[pos].type)
         {
@@ -132,9 +142,18 @@ void ha_publish()
             Serial.printf("[HA] select\n");
             type = "select";
             break;
+        case ha_light:
+            Serial.printf("[HA] light\n");
+            type = "light";
+            break;
         default:
             Serial.printf("[HA] last one\n");
-            return;
+            break;
+        }
+
+        if (!type)
+        {
+            break;
         }
 
         sprintf(uniq_id, "%s_%s", ha_info.id, ha_info.entities[pos].id);
@@ -150,12 +169,29 @@ void ha_publish()
         ha_addstr(json_str, "dev_cla", ha_info.entities[pos].dev_class);
         ha_addstr(json_str, "stat_cla", ha_info.entities[pos].state_class);
         ha_addstr(json_str, "ic", ha_info.entities[pos].ic);
+        ha_addstr(json_str, "mode", ha_info.entities[pos].mode);
         ha_addstr(json_str, "ent_cat", ha_info.entities[pos].ent_cat);
-        ha_addmqtt(json_str, "cmd_t", ha_info.entities[pos].cmd_t);
-        ha_addmqtt(json_str, "stat_t", ha_info.entities[pos].stat_t);
-        ha_addmqtt(json_str, "val_tpl", ha_info.entities[pos].val_tpl);
+        ha_addmqtt(json_str, "cmd_t", ha_info.entities[pos].cmd_t, &ha_info.entities[pos]);
+        ha_addmqtt(json_str, "stat_t", ha_info.entities[pos].stat_t, &ha_info.entities[pos]);
+        ha_addmqtt(json_str, "rgbw_cmd_t", ha_info.entities[pos].rgbw_t, &ha_info.entities[pos]);
+        ha_addmqtt(json_str, "rgb_cmd_t", ha_info.entities[pos].rgb_t, &ha_info.entities[pos]);
+        ha_addmqtt(json_str, "fx_cmd_t", ha_info.entities[pos].fx_cmd_t, &ha_info.entities[pos]);
+        ha_addmqtt(json_str, "fx_stat_t", ha_info.entities[pos].fx_stat_t, &ha_info.entities[pos]);
+        ha_addstrarray(json_str, "fx_list", ha_info.entities[pos].fx_list);
+        ha_addmqtt(json_str, "val_tpl", ha_info.entities[pos].val_tpl, &ha_info.entities[pos]);
         ha_addstrarray(json_str, "options", ha_info.entities[pos].options);
         ha_addstr(json_str, "unit_of_meas", ha_info.entities[pos].unit_of_meas);
+
+        switch (ha_info.entities[pos].type)
+        {
+        case ha_number:
+            ha_addint(json_str, "min", ha_info.entities[pos].min);
+            ha_addint(json_str, "max", ha_info.entities[pos].max);
+            break;
+        default:
+            break;
+        }
+
         strcat(json_str, "\"dev\": {");
         ha_addstr(json_str, "name", ha_info.name);
         ha_addstr(json_str, "ids", ha_info.id);
@@ -182,23 +218,48 @@ void ha_received(char *topic, const char *payload)
 {
     for (int pos = 0; pos < ha_info.entitiy_count; pos++)
     {
-        if (!ha_info.entities[pos].cmd_t || !ha_info.entities[pos].received)
-        {
-            continue;
-        }
         char item_topic[128];
-        sprintf(item_topic, ha_info.entities[pos].cmd_t, current_config.mqtt_client);
 
-        if (strcmp(topic, item_topic))
+        if (ha_info.entities[pos].cmd_t && ha_info.entities[pos].received)
         {
-            continue;
+            sprintf(item_topic, ha_info.entities[pos].cmd_t, current_config.mqtt_client);
+            if (!strcmp(topic, item_topic))
+            {
+                ha_info.entities[pos].received(&ha_info.entities[pos], ha_info.entities[pos].received_ctx, payload);
+
+                if (ha_info.entities[pos].transmit)
+                {
+                    ha_info.entities[pos].transmit(&ha_info.entities[pos], ha_info.entities[pos].transmit_ctx);
+                }
+            }
         }
 
-        ha_info.entities[pos].received(&ha_info.entities[pos], ha_info.entities[pos].received_ctx, payload);
-
-        if (ha_info.entities[pos].transmit)
+        if (ha_info.entities[pos].rgb_t && ha_info.entities[pos].rgb_received)
         {
-            ha_info.entities[pos].transmit(&ha_info.entities[pos], ha_info.entities[pos].transmit_ctx);
+            sprintf(item_topic, ha_info.entities[pos].rgb_t, current_config.mqtt_client);
+            if (!strcmp(topic, item_topic))
+            {
+                ha_info.entities[pos].rgb_received(&ha_info.entities[pos], ha_info.entities[pos].rgb_received_ctx, payload);
+
+                if (ha_info.entities[pos].transmit)
+                {
+                    ha_info.entities[pos].transmit(&ha_info.entities[pos], ha_info.entities[pos].transmit_ctx);
+                }
+            }
+        }
+
+        if (ha_info.entities[pos].fx_cmd_t && ha_info.entities[pos].fx_received)
+        {
+            sprintf(item_topic, ha_info.entities[pos].fx_cmd_t, current_config.mqtt_client);
+            if (!strcmp(topic, item_topic))
+            {
+                ha_info.entities[pos].fx_received(&ha_info.entities[pos], ha_info.entities[pos].fx_received_ctx, payload);
+
+                if (ha_info.entities[pos].transmit)
+                {
+                    ha_info.entities[pos].transmit(&ha_info.entities[pos], ha_info.entities[pos].transmit_ctx);
+                }
+            }
         }
     }
 }
@@ -216,6 +277,22 @@ void ha_transmit(const t_ha_entity *entity, const char *value)
     }
     char item_topic[128];
     sprintf(item_topic, entity->stat_t, current_config.mqtt_client);
+
+    if (!mqtt.publish(item_topic, value))
+    {
+        Serial.printf("[HA] publish failed\n");
+    }
+}
+
+void ha_transmit_topic(const char *stat_t, const char *value)
+{
+    if (!stat_t)
+    {
+        return;
+    }
+
+    char item_topic[128];
+    sprintf(item_topic, stat_t, current_config.mqtt_client);
 
     if (!mqtt.publish(item_topic, value))
     {
@@ -253,14 +330,22 @@ void ha_connected()
 {
     for (int pos = 0; pos < ha_info.entitiy_count; pos++)
     {
-        if (!ha_info.entities[pos].cmd_t || !ha_info.entities[pos].received)
-        {
-            continue;
-        }
         char item_topic[128];
-        sprintf(item_topic, ha_info.entities[pos].cmd_t, current_config.mqtt_client);
-
-        mqtt.subscribe(item_topic);
+        if (ha_info.entities[pos].cmd_t && ha_info.entities[pos].received)
+        {
+            sprintf(item_topic, ha_info.entities[pos].cmd_t, current_config.mqtt_client);
+            mqtt.subscribe(item_topic);
+        }
+        if (ha_info.entities[pos].rgb_t && ha_info.entities[pos].rgb_received)
+        {
+            sprintf(item_topic, ha_info.entities[pos].rgb_t, current_config.mqtt_client);
+            mqtt.subscribe(item_topic);
+        }
+        if (ha_info.entities[pos].fx_cmd_t && ha_info.entities[pos].fx_received)
+        {
+            sprintf(item_topic, ha_info.entities[pos].fx_cmd_t, current_config.mqtt_client);
+            mqtt.subscribe(item_topic);
+        }
     }
     ha_publish();
     ha_transmit_all();

@@ -130,6 +130,10 @@ void ha_publish()
             Serial.printf("[HA] number\n");
             type = "number";
             break;
+        case ha_switch:
+            Serial.printf("[HA] switch\n");
+            type = "switch";
+            break;
         case ha_button:
             Serial.printf("[HA] button\n");
             type = "button";
@@ -366,18 +370,39 @@ bool ha_loop()
     return false;
 }
 
-void ha_add(t_ha_entity *entity)
+bool ha_exists(const char *id)
 {
-    if (!entity)
+    if (!id || !strlen(id))
     {
-        return;
+        return false;
+    }
+    
+    /* return if already exists */
+    for(int pos = 0; pos < ha_info.entitiy_count; pos++)
+    {
+        if(!strcmp(ha_info.entities[pos].id, id))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ha_add(t_ha_entity *entity)
+{
+    if (!entity || ha_exists(entity->id))
+    {
+        return false;
     }
 
     if (ha_info.entitiy_count >= MAX_ENTITIES)
     {
-        return;
+        return false;
     }
+
     memcpy(&ha_info.entities[ha_info.entitiy_count++], entity, sizeof(t_ha_entity));
+
+    return true;
 }
 
 int ha_parse_index(const char *options, const char *message)

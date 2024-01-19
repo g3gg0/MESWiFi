@@ -25,6 +25,15 @@ bool mqtt_fail = false;
 char command_topic[64];
 char response_topic[64];
 
+
+extern uint32_t manual_set_temperature;
+extern bool manual_set_active;
+extern uint32_t manual_set_next;
+extern uint32_t manual_set_end;
+extern uint32_t manual_set_duration;
+
+
+
 void callback(char *topic, byte *payload, unsigned int length)
 {
     Serial.print("Message arrived [");
@@ -85,6 +94,10 @@ void callback(char *topic, byte *payload, unsigned int length)
                 break;
             }
         }
+        else if (!strncmp(command, "ow", 2))
+        {
+            onewire_search();
+        }
         else
         {
             snprintf(buf, sizeof(buf) - 1, "unknown command: '%s'", command);
@@ -98,6 +111,81 @@ void mqtt_ota_received(const t_ha_entity *entity, void *ctx, const char *message
 {
     ota_setup();
 }
+
+void mqtt_manual_set_temperature_received(const t_ha_entity *entity, void *ctx, const char *message)
+{
+    int temperature = 0;
+
+    int ret = sscanf(message, "%d", &temperature);
+    if (ret != 1)
+    {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Failed to parse '%s': %d", message, ret);
+        mqtt_publish_string("feeds/string/%s/error", msg);
+        return;
+    }
+
+    manual_set_temperature = temperature;
+}
+
+void mqtt_manual_set_temperature_transmit(const t_ha_entity *entity, void *ctx)
+{
+    char state_buf[64];
+
+    sprintf(state_buf, "%d", manual_set_temperature);
+
+    ha_transmit(entity, state_buf);
+}
+
+void mqtt_manual_set_active_received(const t_ha_entity *entity, void *ctx, const char *message)
+{
+    bool active = false;
+
+    if (!strcasecmp(message, "ON"))
+    {
+        active = true;
+        manual_set_next = 0;
+        manual_set_end = millis() + manual_set_duration * 1000;
+    }
+
+    manual_set_active = active;
+}
+
+void mqtt_manual_set_active_transmit(const t_ha_entity *entity, void *ctx)
+{
+    char state_buf[64];
+
+    sprintf(state_buf, "%s", manual_set_active?"ON":"OFF");
+
+    ha_transmit(entity, state_buf);
+}
+
+void mqtt_manual_set_duration_received(const t_ha_entity *entity, void *ctx, const char *message)
+{
+    int duration = 0;
+
+    int ret = sscanf(message, "%d", &duration);
+    if (ret != 1)
+    {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Failed to parse '%s': %d", message, ret);
+        mqtt_publish_string("feeds/string/%s/error", msg);
+        return;
+    }
+
+    manual_set_duration = duration;
+}
+
+void mqtt_manual_set_duration_transmit(const t_ha_entity *entity, void *ctx)
+{
+    char state_buf[64];
+
+    sprintf(state_buf, "%d", manual_set_duration);
+
+    ha_transmit(entity, state_buf);
+}
+
+
 
 void mqtt_setup()
 {
@@ -217,7 +305,7 @@ void mqtt_setup()
     memset(&entity, 0x00, sizeof(entity));
     entity.id = "display";
     entity.name = "Displayanzeige";
-    entity.type = ha_text;
+    entity.type = ha_sensor;
     entity.stat_t = "feeds/string/%s/display";
     entity.cmd_t = "feeds/string/%s/display";
     ha_add(&entity);
@@ -356,6 +444,47 @@ void mqtt_setup()
     entity.unit_of_meas = "°C";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/float/%s/temp-speicher";
+    ha_add(&entity);
+
+    
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-soll-set";
+    entity.name = "Anforderung: Temperatur Vorlauf";
+    entity.dev_class = "temperature";
+    entity.unit_of_meas = "°C";
+    entity.type = ha_number;
+    entity.min = 0;
+    entity.max = 80;
+    entity.mode = "slider";
+    entity.cmd_t = "command/%s/temp-soll-set";
+    entity.stat_t = "state/%s/temp-soll-set";
+    entity.received = &mqtt_manual_set_temperature_received;
+    entity.transmit = &mqtt_manual_set_temperature_transmit;
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-soll-duration";
+    entity.name = "Anforderung: Dauer";
+    entity.unit_of_meas = "s";
+    entity.type = ha_number;
+    entity.min = 0;
+    entity.max = 3600;
+    entity.mode = "slider";
+    entity.cmd_t = "command/%s/temp-soll-duration";
+    entity.stat_t = "state/%s/temp-soll-duration";
+    entity.received = &mqtt_manual_set_duration_received;
+    entity.transmit = &mqtt_manual_set_duration_transmit;
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "temp-soll-active";
+    entity.name = "Anforderung: Aktiv";
+    entity.type = ha_switch;
+    entity.cmd_t = "command/%s/temp-soll-active";
+    entity.stat_t = "state/%s/temp-soll-active";
+    entity.received = &mqtt_manual_set_active_received;
+    entity.transmit = &mqtt_manual_set_active_transmit;
     ha_add(&entity);
 }
 

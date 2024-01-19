@@ -24,6 +24,14 @@ volatile uint32_t lon_rx_activity = 0;
 
 struct tm timeStruct;
 
+
+uint32_t manual_set_temperature = 80;
+bool manual_set_active = false;
+uint32_t manual_set_next = 0;
+uint32_t manual_set_end = 0;
+uint32_t manual_set_duration = 1800;
+
+
 typedef struct
 {
     uint64_t magic1;
@@ -610,6 +618,28 @@ bool lon_loop()
             Serial.println("[i] cyclic status save");
         }
         nextTimeSave = curTime + 10 * 60 * 1000;
+    }
+
+    if(manual_set_active)
+    {
+        if(curTime >= manual_set_next)
+        {
+            manual_set_next = curTime + 5000;
+            uint8_t manual_cmd[] = "\x00\x35\x01\xFF\x02\x54\x80\x12\x22\x60";
+            uint16_t temp = manual_set_temperature * 100;
+
+            manual_cmd[8] = temp >> 8;
+            manual_cmd[9] = temp & 0xFF;
+
+            lon_write(manual_cmd, 10);
+        }
+
+        if(curTime >= manual_set_end)
+        {
+            manual_set_active = false;
+            manual_set_next = 0;
+            manual_set_end = 0;
+        }
     }
 
     if (nextTimeSend <= curTime || lon_save)

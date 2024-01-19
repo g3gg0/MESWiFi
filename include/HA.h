@@ -1,13 +1,15 @@
 #pragma once
 
 #define MAX_LEN 32
-#define MAX_ENTITIES 48
+#define MAX_ENTITIES 96
 
 typedef enum
 {
     ha_unused = 0,
     /* https://www.home-assistant.io/integrations/text.mqtt/ */
     ha_text,
+    /* https://www.home-assistant.io/integrations/switch.mqtt/ */
+    ha_switch,
     /* https://www.home-assistant.io/integrations/sensor.mqtt/ */
     ha_sensor,
     /* https://www.home-assistant.io/integrations/number.mqtt/ */
@@ -96,7 +98,8 @@ void ha_connected();
 bool ha_loop();
 void ha_transmit_all();
 void ha_publish();
-void ha_add(t_ha_entity *entity);
+bool ha_exists(const char *id);
+bool ha_add(t_ha_entity *entity);
 void ha_addmqtt(char *json_str, const char *name, const char *value, t_ha_entity *entity, bool last);
 void ha_received(char *topic, const char *payload);
 void ha_transmit(const t_ha_entity *entity, const char *value);

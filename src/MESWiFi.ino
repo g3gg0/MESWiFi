@@ -5,6 +5,10 @@
 #include <ArduinoOTA.h>
 #include <FS.h>
 #include <SPIFFS.h>
+#include <esp_task_wdt.h>
+#include <DallasTemperature.h>
+
+#define WDT_TIMEOUT 30
 
 #include "HA.h"
 
@@ -38,6 +42,9 @@ void setup()
     }
     cfg_read();
 
+    Serial.printf("[i]   Setup WDT\n");
+    esp_task_wdt_init(WDT_TIMEOUT, true);
+    esp_task_wdt_add(NULL);
     Serial.printf("[i]   Setup WiFi\n");
     wifi_setup();
     Serial.printf("[i]   Setup OTA\n");
@@ -54,6 +61,8 @@ void setup()
     relays_setup();
     Serial.printf("[i]   Setup Temperature sensors\n");
     tempsens_setup();
+    Serial.printf("[i]   Setup OneWire\n");
+    onewire_setup();
 
     Serial.println("Setup done");
 
@@ -94,4 +103,5 @@ void loop()
     {
         delay(5);
     }
+    esp_task_wdt_reset();
 }

@@ -24,7 +24,6 @@ void tempsens_setup_single(DallasTemperature *sensors)
     }
     sprintf(msg, "Tempsens: %d devices found", sensors->getDeviceCount());
     mqtt_publish_string("tele/%s/response", msg);
-    //Serial.print("Parasite power is: ");
     mqtt_publish_string("tele/%s/response", sensors->isParasitePowerMode() ? "Tempsens: parasite on" : "Tempsens: parasite off");
 }
 
@@ -38,12 +37,6 @@ void tempsens_setup()
         Serial.println("Unable to find address for Device 0");
         return;
     }
-
-    sensors_int.setResolution(insideThermometer, 9);
-
-    Serial.print("Device 0 Resolution: ");
-    Serial.print(sensors_int.getResolution(insideThermometer), DEC);
-    Serial.println();
 
     tempsens_found = true;
     Serial.printf("[Sensors] Found 1-Wire sensor: %02X%02X%02X%02X%02X%02X%02X%02X\n", insideThermometer[0], insideThermometer[1], insideThermometer[2], insideThermometer[3], insideThermometer[4], insideThermometer[5], insideThermometer[6], insideThermometer[7]);

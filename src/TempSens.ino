@@ -115,7 +115,10 @@ bool tempsens_loop()
             }
         }
 
-        mqtt_publish_float(topic, temp);
+        if(temp > -30.0f && temp < 120.0f)
+        {
+            mqtt_publish_float(topic, temp);
+        }
     }
 
     return false;

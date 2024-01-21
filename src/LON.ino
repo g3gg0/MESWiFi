@@ -67,6 +67,10 @@ typedef struct
     uint32_t var_nv_1B;
     uint32_t var_nv_1B_pmx;
     uint32_t var_nv_23_pmx;
+    uint32_t var_nv_24_fbh;
+    uint32_t var_nv_25_fbh;
+    uint32_t var_nv_24_ww;
+    uint32_t var_nv_25_ww;
     uint32_t var_nv_25_pmx;
     uint32_t var_nv_2A;
     uint32_t var_nv_2B;
@@ -301,12 +305,36 @@ void lon_parse(const uint8_t *payload, uint8_t length)
                         }
                         break;
                     }
+                    /* C1 (10/11) NV ID 0x24 is "Pumpe" in pct */
+                    case 0x24:
+                    {
+                        if (npdu_src == 10)
+                        {
+                            lon_stat.var_nv_24_fbh = payload[pos];
+                        }
+                        if (npdu_src == 11)
+                        {
+                            lon_stat.var_nv_24_ww = payload[pos];
+                        }
+                        break;
+                    }
+                    /* C1 (10/11) NV ID 0x25 is "Mischventil" in level */
                     /* PMX (60) NV ID 0x25 is "Leistung" */
                     case 0x25:
                     {
                         if (npdu_src == 60)
                         {
                             lon_stat.var_nv_25_pmx = payload[pos];
+                        }
+                        if (npdu_src == 10)
+                        {
+                            int16_t lvl = (payload[pos] << 8) | payload[pos + 1];
+                            lon_stat.var_nv_25_fbh = lvl;
+                        }
+                        if (npdu_src == 11)
+                        {
+                            int16_t lvl = (payload[pos] << 8) | payload[pos + 1];
+                            lon_stat.var_nv_25_ww = lvl;
                         }
                         break;
                     }
@@ -549,6 +577,10 @@ void lon_initStat()
         lon_stat.var_nv_15_pmx = 0x7FFFFFFF;
         lon_stat.var_nv_1B_pmx = 0x7FFFFFFF;
         lon_stat.var_nv_23_pmx = 0x7FFFFFFF;
+        lon_stat.var_nv_24_fbh = 0x7FFFFFFF;
+        lon_stat.var_nv_24_ww = 0x7FFFFFFF;
+        lon_stat.var_nv_25_fbh = 0x7FFFFFFF;
+        lon_stat.var_nv_25_ww = 0x7FFFFFFF;
         lon_stat.var_nv_25_pmx = 0x7FFFFFFF;
         lon_stat.var_nv_2A = 0x7FFFFFFF;
         lon_stat.var_nv_2B = 0x7FFFFFFF;
@@ -599,8 +631,8 @@ bool lon_loop()
     uint8_t type = 0;
     static int nextTimeSend = 1000;
     static int nextTimeSave = 1000;
-    const uint8_t nvVarsDest[] = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 10};
-    const uint8_t nvVars[] = {0x10, 0x12, 0x15, 0x1B, 0x23, 0x25, 0x2A, 0x2B, 0x2F, 0x31, 0x32, 0x72, 0x1B};
+    const uint8_t nvVarsDest[] = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 10, 10, 10, 11, 11};
+    const uint8_t nvVars[] = {0x10, 0x12, 0x15, 0x1B, 0x23, 0x25, 0x2A, 0x2B, 0x2F, 0x31, 0x32, 0x72, 0x1B, 0x24, 0x25, 0x24, 0x25};
     static int nvVarPos = 0;
     bool hasWork = false;
 
@@ -653,7 +685,7 @@ bool lon_loop()
         /* request NV variables */
         lon_write(nvVarCommand, 10);
 
-        nextTimeSend = curTime + 5000;
+        nextTimeSend = curTime + 500;
         hasWork = true;
         lon_save = false;
     }

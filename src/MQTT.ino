@@ -446,7 +446,38 @@ void mqtt_setup()
     entity.stat_t = "feeds/float/%s/temp-speicher";
     ha_add(&entity);
 
-    
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "fbh-pumpe";
+    entity.name = "FBH Pumpe";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/fbh-pumpe";
+    entity.unit_of_meas = "%";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "ww-pumpe";
+    entity.name = "WW Pumpe";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/ww-pumpe";
+    entity.unit_of_meas = "%";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "fbh-mischer";
+    entity.name = "FBH Mischer";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/fbh-mischer";
+    entity.unit_of_meas = "%";
+    ha_add(&entity);
+
+    memset(&entity, 0x00, sizeof(entity));
+    entity.id = "ww-mischer";
+    entity.name = "WW Mischer";
+    entity.type = ha_sensor;
+    entity.stat_t = "feeds/float/%s/ww-mischer";
+    entity.unit_of_meas = "%";
+    ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
     entity.id = "temp-soll-set";
@@ -610,6 +641,22 @@ bool mqtt_loop()
             foerder_integral += ((float)lon_stat.var_nv_15_pmx / 10.0f * 4.8f * expired_ms) / (60.0f * 60.0f * 1000.0f);
             mqtt_publish_float("feeds/float/%s/foerder-integral-kWh", foerder_integral);
 
+            if (lon_stat.var_nv_24_fbh != 0x7FFFFFFF)
+            {
+                mqtt_publish_float("feeds/float/%s/fbh-pumpe", lon_stat.var_nv_24_fbh / 2.0f);
+            }
+            if (lon_stat.var_nv_24_ww != 0x7FFFFFFF)
+            {
+                mqtt_publish_float("feeds/float/%s/ww-pumpe", lon_stat.var_nv_24_ww / 2.0f);
+            }
+            if (lon_stat.var_nv_25_fbh != 0x7FFFFFFF)
+            {
+                mqtt_publish_float("feeds/float/%s/fbh-mischer", (int32_t)lon_stat.var_nv_25_fbh / 200.0f);
+            }
+            if (lon_stat.var_nv_25_ww != 0x7FFFFFFF)
+            {
+                mqtt_publish_float("feeds/float/%s/ww-mischer",  (int32_t)lon_stat.var_nv_25_ww / 200.0f);
+            }
             if (lon_stat.var_nv_23_pmx != 0x7FFFFFFF)
             {
                 mqtt_publish_float("feeds/float/%s/leistung-soll", lon_stat.var_nv_23_pmx / 2.0f);

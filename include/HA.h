@@ -91,6 +91,7 @@ typedef struct
     char sw[MAX_LEN];
     t_ha_entity entities[MAX_ENTITIES];
     int entitiy_count;
+    bool updated;
 } t_ha_info;
 
 void ha_setup();

@@ -360,8 +360,9 @@ bool ha_loop()
     uint32_t time = millis();
     static uint32_t nextTime = 0;
 
-    if (time >= nextTime)
+    if (time >= nextTime || ha_info.updated)
     {
+        ha_info.updated = false;
         ha_publish();
         ha_transmit_all();
         nextTime = time + 60000;
@@ -401,6 +402,7 @@ bool ha_add(t_ha_entity *entity)
     }
 
     memcpy(&ha_info.entities[ha_info.entitiy_count++], entity, sizeof(t_ha_entity));
+    ha_info.updated = true;
 
     return true;
 }

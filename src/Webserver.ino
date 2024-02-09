@@ -1,6 +1,7 @@
 #include <WebServer.h>
 #include <ESP32httpUpdate.h>
-#include "Config.h"
+#include <Config.h>
+#include <Macros.h>
 
 #define xstr(s) str(s)
 #define str(s) #s
@@ -12,9 +13,6 @@ extern volatile lonStat_t lon_stat;
 
 int www_wifi_scanned = -1;
 uint32_t www_last_captive = 0;
-
-#define min(a, b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a < _b ? _a : _b; })
-#define max(a, b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a > _b ? _a : _b; })
 
 void www_setup()
 {
@@ -280,7 +278,7 @@ void handle_set_parm()
     strncpy(current_config.wifi_password, webserver.arg("wifi_password").c_str(), sizeof(current_config.wifi_password));
 
     strncpy(current_config.mqtt_server, webserver.arg("mqtt_server").c_str(), sizeof(current_config.mqtt_server));
-    current_config.mqtt_port = max(1, min(65535, webserver.arg("mqtt_port").toInt()));
+    current_config.mqtt_port = COERCE(webserver.arg("mqtt_port").toInt(), 1, 65535);
     strncpy(current_config.mqtt_user, webserver.arg("mqtt_user").c_str(), sizeof(current_config.mqtt_user));
     strncpy(current_config.mqtt_password, webserver.arg("mqtt_password").c_str(), sizeof(current_config.mqtt_password));
     strncpy(current_config.mqtt_client, webserver.arg("mqtt_client").c_str(), sizeof(current_config.mqtt_client));

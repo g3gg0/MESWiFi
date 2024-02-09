@@ -7,6 +7,7 @@
 #include <SPIFFS.h>
 #include <esp_task_wdt.h>
 #include <DallasTemperature.h>
+#include <LON.h>
 
 #define WDT_TIMEOUT 30
 
@@ -45,6 +46,8 @@ void setup()
     Serial.printf("[i]   Setup WDT\n");
     esp_task_wdt_init(WDT_TIMEOUT, true);
     esp_task_wdt_add(NULL);
+    
+    ha_setup();
     Serial.printf("[i]   Setup WiFi\n");
     wifi_setup();
     Serial.printf("[i]   Setup OTA\n");
@@ -53,10 +56,10 @@ void setup()
     time_setup();
     Serial.printf("[i]   Setup Webserver\n");
     www_setup();
-    Serial.printf("[i]   Setup MQTT\n");
-    mqtt_setup();
     Serial.printf("[i]   Setup LON bus\n");
     lon_setup();
+    Serial.printf("[i]   Setup MQTT\n");
+    mqtt_setup();
     Serial.printf("[i]   Setup Relays\n");
     relays_setup();
     Serial.printf("[i]   Setup Temperature sensors\n");

@@ -19,6 +19,7 @@ void ota_setup()
     ArduinoOTA.onStart([]()
     {
         Serial.printf("[OTA] starting\n");
+        lon_rx_disable();
         led_set(0, 255, 0, 255);
         ota_active = true; 
         ota_offtime = millis() + 600000;
@@ -30,7 +31,7 @@ void ota_setup()
     })
     .onProgress([](unsigned int progress, unsigned int total)
     {
-        led_set(0, 255 - (progress / (total / 255)), 0, (progress / (total / 255))); 
+        //led_set(0, 255 - (progress / (total / 255)), 0, (progress / (total / 255))); 
     })
     .onError([](ota_error_t error)
     {
@@ -40,6 +41,8 @@ void ota_setup()
         else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
         else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
         else if (error == OTA_END_ERROR) Serial.println("End Failed");
+        ota_active = false;
+        lon_rx_enable();
     });
 
     Serial.printf("[OTA] begin\n");

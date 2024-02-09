@@ -191,8 +191,6 @@ void mqtt_setup()
 {
     mqtt.setCallback(callback);
 
-    ha_setup();
-
     t_ha_entity entity;
 
     memset(&entity, 0x00, sizeof(entity));
@@ -270,39 +268,6 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "drehzahl";
-    entity.name = "Drehzahl";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/integer/%s/drehzahl";
-    entity.unit_of_meas = "rpm";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "betriebsstunden";
-    entity.name = "Betriebsstunden";
-    entity.dev_class = "duration";
-    entity.state_class = "total_increasing";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/integer/%s/betriebsstunden";
-    entity.unit_of_meas = "h";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "anheiz-count";
-    entity.name = "Anheizzähler";
-    entity.state_class = "total_increasing";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/integer/%s/anheiz-count";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "zustand";
-    entity.name = "Zustand";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/integer/%s/zustand";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
     entity.id = "display";
     entity.name = "Displayanzeige";
     entity.type = ha_sensor;
@@ -310,25 +275,6 @@ void mqtt_setup()
     entity.cmd_t = "feeds/string/%s/display";
     ha_add(&entity);
 
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "foerder-soll";
-    entity.name = "Fördermenge/h soll";
-    entity.dev_class = "weight";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/integer/%s/foerder-soll";
-    entity.val_tpl = "{{ (value|float) / 10 }}";
-    entity.unit_of_meas = "kg";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "foerder-berech";
-    entity.name = "Fördermenge/h berechnet";
-    entity.dev_class = "weight";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/integer/%s/foerder-berech";
-    entity.val_tpl = "{{ (value|float) / 10 }}";
-    entity.unit_of_meas = "kg";
-    ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
     entity.id = "foerder-integral-kWh";
@@ -341,142 +287,12 @@ void mqtt_setup()
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
-    entity.id = "leistung";
-    entity.name = "Leistung ist";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/leistung-soll";
-    entity.unit_of_meas = "%";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "leistung-soll";
-    entity.name = "Leistung soll";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/leistung-soll";
-    entity.unit_of_meas = "%";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
     entity.id = "temp-pcb";
     entity.name = "Steuereinheit";
     entity.dev_class = "temperature";
     entity.unit_of_meas = "°C";
     entity.type = ha_sensor;
     entity.stat_t = "feeds/float/%s/temp-pcb";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-kammer";
-    entity.name = "Temperatur Brennkammer";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-kammer";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-abgas";
-    entity.name = "Temperatur Abgas";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-abgas";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-kessel-soll";
-    entity.name = "Temperatur Kessel soll";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-kessel-soll";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-kessel";
-    entity.name = "Temperatur Kessel";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-kessel";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-aussen";
-    entity.name = "Temperatur Aussen";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-aussen";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-vorlauf-soll-hk";
-    entity.name = "Temperatur Vorlauf Heizkörper soll";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-vorlauf-soll-hk";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-vorlauf-soll-ww";
-    entity.name = "Temperatur Vorlauf Warmwasser soll";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-vorlauf-soll-ww";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-soll-ww";
-    entity.name = "Temperatur Warmwasser soll";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-soll-ww";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "temp-speicher";
-    entity.name = "Temperatur Speicher";
-    entity.dev_class = "temperature";
-    entity.unit_of_meas = "°C";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/temp-speicher";
-    ha_add(&entity);
-
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "fbh-pumpe";
-    entity.name = "FBH Pumpe";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/fbh-pumpe";
-    entity.unit_of_meas = "%";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "ww-pumpe";
-    entity.name = "WW Pumpe";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/ww-pumpe";
-    entity.unit_of_meas = "%";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "fbh-mischer";
-    entity.name = "FBH Mischer";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/fbh-mischer";
-    entity.unit_of_meas = "%";
-    ha_add(&entity);
-
-    memset(&entity, 0x00, sizeof(entity));
-    entity.id = "ww-mischer";
-    entity.name = "WW Mischer";
-    entity.type = ha_sensor;
-    entity.stat_t = "feeds/float/%s/ww-mischer";
-    entity.unit_of_meas = "%";
     ha_add(&entity);
 
     memset(&entity, 0x00, sizeof(entity));
@@ -604,33 +420,20 @@ bool mqtt_loop()
         {
             /* debug */
             mqtt_publish_int("feeds/integer/%s/rssi", wifi_rssi);
-
             mqtt_publish_int("feeds/integer/%s/burning-minutes", lon_stat.burning_minutes);
-            mqtt_publish_int("feeds/integer/%s/last-error-minutes", lon_stat.last_error_minutes);
 
-            if (lon_stat.burning_minutes != 0x7FFFFFFF && lon_stat.last_error_minutes != 0x7FFFFFFF)
+            if (lon_stat.last_error_minutes < 0x40000000)
             {
+                mqtt_publish_int("feeds/integer/%s/last-error-minutes", lon_stat.last_error_minutes);
                 mqtt_publish_int("feeds/integer/%s/last-error-delta", lon_stat.burning_minutes - lon_stat.last_error_minutes);
             }
             mqtt_publish_int("feeds/integer/%s/time-hour", timeStruct.tm_hour);
             mqtt_publish_int("feeds/integer/%s/time-minute", timeStruct.tm_min);
             mqtt_publish_int("feeds/integer/%s/ignite-stat-pos", lon_stat.igniteStatPos);
-
             mqtt_publish_int("feeds/integer/%s/anheiz-stat", lon_stat.ignites_24h);
             mqtt_publish_int("feeds/integer/%s/rx-count", lon_stat.rx_count);
             mqtt_publish_int("feeds/integer/%s/rx-crc", lon_stat.crc_errors);
-
-            mqtt_publish_int("feeds/integer/%s/fehlercode", lon_stat.error);
-            mqtt_publish_int("feeds/integer/%s/drehzahl", lon_stat.var_nv_12);
-            mqtt_publish_int("feeds/integer/%s/betriebsstunden", lon_stat.var_nv_2A);
-            mqtt_publish_int("feeds/integer/%s/anheiz-count", lon_stat.var_nv_2B);
-            mqtt_publish_int("feeds/integer/%s/zustand", lon_stat.var_nv_10_state);
-
-            mqtt_publish_string("feeds/string/%s/display", (const char *)lon_stat.var_nv_10);
             mqtt_publish_float("feeds/float/%s/temp-pcb", tempsens_value);
-
-            mqtt_publish_int("feeds/integer/%s/foerder-soll", lon_stat.var_nv_15_pmx);
-            mqtt_publish_int("feeds/integer/%s/foerder-berech", lon_stat.var_nv_1B_pmx);
 
             int expired_ms = (time - mqtt_last_publish_time);
             /* calc energy with
@@ -638,69 +441,8 @@ bool mqtt_loop()
                where
                   timestep = miliseconds since last read
             */
-            foerder_integral += ((float)lon_stat.var_nv_15_pmx / 10.0f * 4.8f * expired_ms) / (60.0f * 60.0f * 1000.0f);
+            foerder_integral += (lon_stat.foerder_soll * 4.8f * expired_ms) / (60.0f * 60.0f * 1000.0f);
             mqtt_publish_float("feeds/float/%s/foerder-integral-kWh", foerder_integral);
-
-            if (lon_stat.var_nv_24_fbh != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/fbh-pumpe", lon_stat.var_nv_24_fbh / 2.0f);
-            }
-            if (lon_stat.var_nv_24_ww != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/ww-pumpe", lon_stat.var_nv_24_ww / 2.0f);
-            }
-            if (lon_stat.var_nv_25_fbh != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/fbh-mischer", (int32_t)lon_stat.var_nv_25_fbh / 200.0f);
-            }
-            if (lon_stat.var_nv_25_ww != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/ww-mischer",  (int32_t)lon_stat.var_nv_25_ww / 200.0f);
-            }
-            if (lon_stat.var_nv_23_pmx != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/leistung-soll", lon_stat.var_nv_23_pmx / 2.0f);
-            }
-            if (lon_stat.var_nv_25_pmx != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/leistung", lon_stat.var_nv_25_pmx / 2.0f);
-            }
-            if (lon_stat.var_nv_2F != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-kammer", (lon_stat.var_nv_2F / 10.0f) - 273.15f);
-            }
-            if (lon_stat.var_nv_31 != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-abgas", (lon_stat.var_nv_31 / 10.0f) - 273.15f);
-            }
-            if (lon_stat.var_nv_32 != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-kessel-soll", lon_stat.var_nv_32 / 100.0f);
-            }
-            if (lon_stat.var_sel_110 != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-kessel", lon_stat.var_sel_110 / 100.0f);
-            }
-            if (lon_stat.var_sel_00 != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-aussen", lon_stat.var_sel_00 / 100.0f);
-            }
-            if (lon_stat.var_sel_10 != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-vorlauf-soll-hk", lon_stat.var_sel_10 / 100.0f);
-            }
-            if (lon_stat.var_sel_12 != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-vorlauf-soll-ww", lon_stat.var_sel_12 / 100.0f);
-            }
-            if (lon_stat.var_sel_72 != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-soll-ww", lon_stat.var_sel_72 / 100.0f);
-            }
-            if (lon_stat.var_nv_1B != 0x7FFFFFFF)
-            {
-                mqtt_publish_float("feeds/float/%s/temp-speicher", lon_stat.var_nv_1B / 100.0f);
-            }
 
             mqtt_last_publish_time = time;
         }

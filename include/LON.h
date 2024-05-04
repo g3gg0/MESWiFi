@@ -28,13 +28,21 @@ typedef enum
 {
     SNVT_NONE,
     SNVT_DISP,
+    /* https://www.lonmark.org/nvs/?id=SNVT_temp_p */
     SNVT_temp_p,
+    /* https://www.lonmark.org/nvs/?id=SNVT_temp */
     SNVT_temp,
+    /* https://www.lonmark.org/nvs/?id=SNVT_rpm */
     SNVT_rpm,
+    /* https://www.lonmark.org/nvs/?id=SNVT_mass_kilo */
     SNVT_mass_kilo,
+    /* https://www.lonmark.org/nvs/?id=SNVT_lev_cont */
     SNVT_lev_cont,
+    /* https://www.lonmark.org/nvs/?id=SNVT_time_hour */
     SNVT_time_hour,
+    /* https://www.lonmark.org/nvs/?id=SNVT_count */
     SNVT_count,
+    /* https://www.lonmark.org/nvs/?id=SNVT_lev_percent */
     SNVT_lev_percent
 } snvt_type_t;
 

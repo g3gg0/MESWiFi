@@ -4,7 +4,10 @@
 #define CONFIG_SOFTAPNAME "esp32-config"
 #define CONFIG_OTANAME "MES-WiFi"
 
-#define CONFIG_MAGIC 0xE1AAFF1A
+#define CONFIG_MAGIC 0xE1AAFF1B
+
+#define VERBOSE_WIFI  (1 << 0)
+#define VERBOSE_HA    (1 << 2)
 
 typedef struct
 {
@@ -15,7 +18,7 @@ typedef struct
     char wifi_password[32];
 
     char mqtt_server[32];
-    int mqtt_port;
+    uint32_t mqtt_port;
     char mqtt_user[32];
     char mqtt_password[32];
     char mqtt_client[32];

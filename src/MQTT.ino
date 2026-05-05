@@ -339,19 +339,28 @@ void mqtt_publish_string(const char *name, const char *value)
 {
     char path_buffer[128];
 
+    if (!mqtt.connected())
+    {
+        return;
+    }
+
     sprintf(path_buffer, name, current_config.mqtt_client);
 
     if (!mqtt.publish(path_buffer, value))
     {
         mqtt_fail = true;
     }
-    Serial.printf("Published %s : %s\n", path_buffer, value);
 }
 
 void mqtt_publish_float(const char *name, float value)
 {
     char path_buffer[128];
     char buffer[32];
+
+    if (!mqtt.connected())
+    {
+        return;
+    }
 
     sprintf(path_buffer, name, current_config.mqtt_client);
     sprintf(buffer, "%0.2f", value);
@@ -360,13 +369,17 @@ void mqtt_publish_float(const char *name, float value)
     {
         mqtt_fail = true;
     }
-    Serial.printf("Published %s : %s\n", path_buffer, buffer);
 }
 
 void mqtt_publish_int(const char *name, uint32_t value)
 {
     char path_buffer[128];
     char buffer[32];
+
+    if (!mqtt.connected())
+    {
+        return;
+    }
 
     if (value == 0x7FFFFFFF)
     {
@@ -379,7 +392,6 @@ void mqtt_publish_int(const char *name, uint32_t value)
     {
         mqtt_fail = true;
     }
-    Serial.printf("Published %s : %s\n", path_buffer, buffer);
 }
 
 bool mqtt_loop()
@@ -390,6 +402,12 @@ bool mqtt_loop()
 #ifdef TESTMODE
     return false;
 #endif
+
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        return false;
+    }
+
     if (mqtt_fail)
     {
         mqtt_fail = false;

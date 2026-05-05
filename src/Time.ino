@@ -23,6 +23,8 @@ unsigned long timeReference = 0;
 bool time_valid = false;
 unsigned long secsSince1900 = 0;
 unsigned long setup_time_offset = 2;
+bool udp_begun = false;
+unsigned long wifi_ready_at = 0;
 
 /* 2000-03-01 (mod 400 year, immediately after feb29 */
 #define LEAPOCH (946684800LL + 86400 * (31 + 29))
@@ -34,10 +36,11 @@ statusType currentStatus = Idle;
 
 void time_setup()
 {
-    Udp.begin(localPort);
     currentStatus = Idle;
     lastSent = 0;
     timeReference = 0;
+    udp_begun = false;
+    wifi_ready_at = 0;
     memset(packetBuffer, 0x00, sizeof(packetBuffer));
 }
 
@@ -77,6 +80,21 @@ const char *Time_getStateString()
 bool time_loop()
 {
     if (WiFi.status() != WL_CONNECTED)
+    {
+        udp_begun = false;
+        wifi_ready_at = 0;
+        return false;
+    }
+
+    if (!udp_begun)
+    {
+        Udp.begin(localPort);
+        udp_begun = true;
+        wifi_ready_at = millis();
+    }
+
+    /* wait 2 seconds after WiFi connects before sending NTP */
+    if (millis() - wifi_ready_at < 2000)
     {
         return false;
     }

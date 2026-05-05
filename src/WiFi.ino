@@ -4,22 +4,32 @@
 DNSServer dnsServer;
 
 bool connecting = false;
+bool scanning = false;
 bool wifi_captive = false;
 char wifi_error[64];
 int wifi_rssi = 0;
 
+void wifi_start_scan()
+{
+    Serial.printf("[WiFi] Scanning for SSID '%s'...\n", current_config.wifi_ssid);
+    WiFi.mode(WIFI_STA);
+    WiFi.scanNetworks(true /* async */);
+    scanning = true;
+    connecting = false;
+    led_set(1, 8, 8, 0);
+}
+
 void wifi_setup()
 {
-    Serial.printf("[WiFi] Connecting to '%s', password '%s'...\n", current_config.wifi_ssid, current_config.wifi_password);
     sprintf(wifi_error, "");
-    WiFi.begin(current_config.wifi_ssid, current_config.wifi_password);
-    connecting = true;
-    led_set(1, 8, 8, 0);
+    wifi_start_scan();
 }
 
 void wifi_off()
 {
     connecting = false;
+    scanning = false;
+    WiFi.scanDelete();
     WiFi.disconnect();
     WiFi.mode(WIFI_OFF);
 }
@@ -61,6 +71,56 @@ bool wifi_loop(void)
             sprintf(wifi_error, "");
         }
         return true;
+    }
+
+    if (scanning)
+    {
+        int n = WiFi.scanComplete();
+        if (n == WIFI_SCAN_RUNNING)
+        {
+            return false;
+        }
+        scanning = false;
+
+        if (n <= 0)
+        {
+            Serial.printf("[WiFi] Scan complete, no networks found\n");
+            WiFi.scanDelete();
+            sprintf(wifi_error, "No networks found");
+            return false;
+        }
+
+        /* find the strongest BSSID matching our SSID */
+        int best = -1;
+        int best_rssi = -200;
+        for (int i = 0; i < n; i++)
+        {
+            if (WiFi.SSID(i).equals(current_config.wifi_ssid) && WiFi.RSSI(i) > best_rssi)
+            {
+                best = i;
+                best_rssi = WiFi.RSSI(i);
+            }
+        }
+
+        if (best < 0)
+        {
+            Serial.printf("[WiFi] SSID '%s' not found during scan\n", current_config.wifi_ssid);
+            WiFi.scanDelete();
+            sprintf(wifi_error, "Network not found");
+            return false;
+        }
+
+        uint8_t *bssid = WiFi.BSSID(best);
+        int channel = WiFi.channel(best);
+        Serial.printf("[WiFi] Best AP for '%s': BSSID %02X:%02X:%02X:%02X:%02X:%02X ch %d RSSI %d\n",
+            current_config.wifi_ssid,
+            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5],
+            channel, best_rssi);
+        WiFi.scanDelete();
+        WiFi.begin(current_config.wifi_ssid, current_config.wifi_password, channel, bssid);
+        connecting = true;
+        stateCounter = 0;
+        return false;
     }
 
     if (nextTime > curTime)
@@ -118,7 +178,7 @@ bool wifi_loop(void)
 
                     led_set(1, r, g, 0);
 
-                    if(current_config.verbose & 1)
+                    if(current_config.verbose & VERBOSE_WIFI)
                     {
                         Serial.printf("[WiFi] RSSI %d, strength: %1.2f, r: %d, g: %d\n", wifi_rssi, strength, r, g);
                     }
@@ -151,8 +211,7 @@ bool wifi_loop(void)
             break;
 
         case WL_SCAN_COMPLETED:
-            Serial.printf("[WiFi] Scan completed\n");
-            wifi_off();
+            /* handled above via WiFi.scanComplete() */
             break;
 
         case WL_DISCONNECTED:
@@ -167,24 +226,16 @@ bool wifi_loop(void)
         case WL_IDLE_STATUS:
             if (!connecting)
             {
-                connecting = true;
-                Serial.printf("[WiFi]  Idle, connect to '%s'\n", current_config.wifi_ssid);
-                WiFi.mode(WIFI_STA);
-                WiFi.begin(current_config.wifi_ssid, current_config.wifi_password);
-            }
-            else
-            {
-                Serial.printf("[WiFi]  Idle, connecting...\n");
+                Serial.printf("[WiFi] Idle, starting scan\n");
+                wifi_start_scan();
             }
             break;
 
         case WL_NO_SHIELD:
             if (!connecting)
             {
-                connecting = true;
-                Serial.printf("[WiFi]  Disabled (%d), connecting to '%s'\n", status, current_config.wifi_ssid);
-                WiFi.mode(WIFI_STA);
-                WiFi.begin(current_config.wifi_ssid, current_config.wifi_password);
+                Serial.printf("[WiFi] Disabled (%d), starting scan\n", status);
+                wifi_start_scan();
             }
             break;
 

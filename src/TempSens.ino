@@ -19,12 +19,12 @@ void tempsens_setup_single(DallasTemperature *sensors)
 
     if (sensors->getDeviceCount() == 0)
     {
-        mqtt_publish_string("tele/%s/response", "Tempsens: No devices found");
+        Serial.printf("[Sensors] No devices found\n");
         return;
     }
-    sprintf(msg, "Tempsens: %d devices found", sensors->getDeviceCount());
-    mqtt_publish_string("tele/%s/response", msg);
-    mqtt_publish_string("tele/%s/response", sensors->isParasitePowerMode() ? "Tempsens: parasite on" : "Tempsens: parasite off");
+    sprintf(msg, "[Sensors] %d devices found", sensors->getDeviceCount());
+    Serial.printf("%s\n", msg);
+    Serial.printf("[Sensors] %s\n", sensors->isParasitePowerMode() ? "parasite on" : "parasite off");
 }
 
 void tempsens_setup()
@@ -64,7 +64,7 @@ bool tempsens_loop()
 
     if(!sensors_ext.getDeviceCount())
     {
-        mqtt_publish_string("tele/%s/response", "No sensors found, rescan");
+        Serial.printf("[Sensors] No ext sensors found, rescanning\n");
         tempsens_setup_single(&sensors_ext);
     }
     sensors_ext.requestTemperatures();

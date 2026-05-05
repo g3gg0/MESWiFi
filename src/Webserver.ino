@@ -459,7 +459,7 @@ String SendHTML()
     ADD_CONFIG("mqtt_user", current_config.mqtt_user, "%s", "MQTT Username");
     ADD_CONFIG("mqtt_password", current_config.mqtt_password, "%s", "MQTT Password");
     ADD_CONFIG("mqtt_client", current_config.mqtt_client, "%s", "MQTT Client Identification");
-    ADD_CONFIG_CHECK4("verbose", current_config.verbose, "%d", "Verbosity", "Serial", "-", "-", "-");
+    ADD_CONFIG_CHECK4("verbose", current_config.verbose, "%d", "Verbosity", "Serial", "-", "Home Assistant", "-");
     ADD_CONFIG_CHECK4("mqtt_publish", current_config.mqtt_publish, "%d", "MQTT publishes", "-", "Debug", "-", "-");
     ADD_CONFIG("http_update", "", "%s", "Update URL (<a href=\"javascript:void(0);\" onclick=\"document.getElementById('http_update').value = 'https://g3gg0.magiclantern.fm/Firmware/MES-WiFi/firmware.bin'\">Release</a>)");
 

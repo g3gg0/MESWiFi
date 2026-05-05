@@ -17,6 +17,42 @@
 
 extern bool ota_active;
 
+/* Heap watchdog: sample baseline 60s after boot, restart if heap drops below 50% */
+static uint32_t heap_baseline = 0;
+static bool     heap_baseline_set = false;
+
+void heap_watchdog_loop()
+{
+    uint32_t now = millis();
+    static uint32_t nextCheck = 0;
+
+    if (now < nextCheck)
+    {
+        return;
+    }
+    nextCheck = now + 10000;
+
+    uint32_t freeHeap = ESP.getFreeHeap();
+
+    if (!heap_baseline_set)
+    {
+        if (now >= 60000)
+        {
+            heap_baseline = freeHeap;
+            heap_baseline_set = true;
+            Serial.printf("[Heap] Baseline set: %u bytes\n", heap_baseline);
+        }
+        return;
+    }
+
+    if (freeHeap < heap_baseline / 2)
+    {
+        Serial.printf("[Heap] Low memory: %u bytes (baseline %u) - restarting\n", freeHeap, heap_baseline);
+        delay(200);
+        ESP.restart();
+    }
+}
+
 void setup()
 {
     led_setup();
@@ -99,6 +135,7 @@ void loop()
         hasWork |= www_loop();
         hasWork |= tempsens_loop();
         hasWork |= relays_loop();
+        heap_watchdog_loop();
     }
     hasWork |= ota_loop();
 

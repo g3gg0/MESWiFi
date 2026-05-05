@@ -16,6 +16,7 @@ WiFiUDP lon_udp_in;
 extern float tempsens_value;
 
 volatile uint32_t lon_rx_activity = 0;
+bool lon_udp_begun = false;
 
 struct tm timeStruct;
 
@@ -509,8 +510,6 @@ void lon_setup()
 
     lon_tx_setup();
     lon_rx_setup();
-
-    lon_udp_in.begin(udpPortIn);
 }
 
 bool lon_loop()
@@ -522,6 +521,11 @@ bool lon_loop()
     static int nextTimeSave = 1000;
     static int nvVarPos = 0;
     bool hasWork = false;
+
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        lon_udp_begun = false;
+    }
 
     if (nextTimeSave <= curTime)
     {
@@ -578,6 +582,12 @@ bool lon_loop()
     }
     else if (WiFi.status() == WL_CONNECTED)
     {
+        if (!lon_udp_begun)
+        {
+            lon_udp_in.begin(udpPortIn);
+            lon_udp_begun = true;
+        }
+
         uint32_t received = lon_udp_in.parsePacket();
 
         if (received > 0)
@@ -691,13 +701,16 @@ bool lon_loop()
 
             type = 2;
 
-            lon_udp_out.beginPacket(udpAddress, udpPort);
-            lon_udp_out.write((const uint8_t *)&type, 1);
-            lon_udp_out.write((const uint8_t *)&lon_rx_packets[pos].errorCode, 1);
-            lon_udp_out.write((const uint8_t *)&lon_rx_packets[pos].bitCount, 2);
-            lon_udp_out.write((const uint8_t *)&lon_rx_packets[pos].bitDuration, 2);
-            lon_udp_out.write(pkt_data, pkt_len);
-            lon_udp_out.endPacket();
+            if (WiFi.status() == WL_CONNECTED)
+            {
+                lon_udp_out.beginPacket(udpAddress, udpPort);
+                lon_udp_out.write((const uint8_t *)&type, 1);
+                lon_udp_out.write((const uint8_t *)&lon_rx_packets[pos].errorCode, 1);
+                lon_udp_out.write((const uint8_t *)&lon_rx_packets[pos].bitCount, 2);
+                lon_udp_out.write((const uint8_t *)&lon_rx_packets[pos].bitDuration, 2);
+                lon_udp_out.write(pkt_data, pkt_len);
+                lon_udp_out.endPacket();
+            }
 
             /*
                   Serial.printf("Received packet: (%d byte) ", pkt_len);

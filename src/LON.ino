@@ -186,7 +186,10 @@ static void register_req_item(const nv_handle_item_t *item)
         strcat(mqtt_topic, item->name);
     }
     entity.stat_t = strdup(mqtt_topic);
-    ha_add(&entity);
+    if (!ha_add(&entity))
+    {
+        free((void *)entity.stat_t);
+    }
 }
 
 static const nv_sel_item_t nv_sel_items[] = {

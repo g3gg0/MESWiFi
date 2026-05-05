@@ -105,6 +105,11 @@ void ha_addint(char *json_str, const char *name, int value, bool last = false)
 void ha_publish()
 {
     char *json_str = (char *)malloc(1024);
+    if (!json_str)
+    {
+        Serial.printf("[HA] malloc failed\n");
+        return;
+    }
     char mqtt_path[128];
     char uniq_id[128];
 
